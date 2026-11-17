@@ -13,7 +13,7 @@ When you take part in this project, you agree to obey the [Code of Conduct](./CO
 
 ## Set up the project
 
-You need Node 22.16 or later and npm.
+You need Node 22.18 or later and npm. The build tool needs that version.
 
 ```bash
 git clone https://github.com/theserverlessdev/emdash-resend-kit.git
