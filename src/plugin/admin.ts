@@ -344,7 +344,7 @@ async function settingsPage(
 
 	blocks.push(statusFields(config), {
 		type: "section",
-		text: "Select Resend as the email provider in the EmDash email settings.",
+		text: "Select emdash-resend-kit as the provider in the EmDash email settings.",
 		accessory: {
 			type: "link",
 			label: "Open email settings",

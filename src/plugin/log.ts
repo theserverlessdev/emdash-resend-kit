@@ -163,8 +163,10 @@ export async function recordSend(
 	try {
 		const at = new Date(now).toISOString();
 		const statField: StatField = input.status === "scheduled" ? "sent" : input.status;
-		await bumpStat(ctx, dateKey(now), statField);
-		if (!logging) return null;
+		if (!logging) {
+			await bumpStat(ctx, dateKey(now), statField);
+			return null;
+		}
 
 		const id = input.resendId ?? `local-${crypto.randomUUID()}`;
 		const error = input.error ? clip(redactSecrets(input.error, input.secrets)) : null;
@@ -183,10 +185,21 @@ export async function recordSend(
 			events: [{ type: input.status, at, ...(error ? { detail: error } : {}) }],
 		};
 		const emails = emailsCollection(ctx);
-		// Resend returns the same ID for a repeat with the same idempotency key.
-		// Keep the first record in that case.
 		const created = await emails.compareAndSet(id, null, record);
-		if (!created.applied && input.resendId) {
+		if (created.applied) {
+			await bumpStat(ctx, dateKey(now), statField);
+			return id;
+		}
+		// A record with this ID exists. There are two causes:
+		// 1. A webhook arrived before this write. That record has the source
+		//    `external`, so set the correct source and subject.
+		// 2. Resend returned a known ID for a repeat with the same idempotency
+		//    key. Resend sent one email, so keep the first record.
+		const merged = await emails.updateIf(id, {
+			where: { source: "external" },
+			set: { source: input.source, subject: record.subject, to: record.to, toHash: record.toHash },
+		});
+		if (!merged.applied) {
 			ctx.log.debug("Resend returned a known email ID. The log keeps the first record.", { id });
 		}
 		return id;
@@ -304,9 +317,9 @@ export async function applyWebhookEvent(
 		}
 		const written = await emails.compareAndSet(emailId, current?.revision ?? null, next);
 		if (!written.applied) continue;
-		// The log counted `sent` at send time. Count it here only for an email
-		// that did not come through the plugin.
-		if (firstOfType && (status !== "sent" || !current) && status !== "scheduled") {
+		// A record from the send path has a `sent` event already, so the `sent`
+		// webhook of such an email is not the first of its type.
+		if (firstOfType && status !== "scheduled") {
 			const field = status === "delivery_delayed" || status === "canceled" ? null : status;
 			if (field) await bumpStat(ctx, dateKey(at), field);
 		}

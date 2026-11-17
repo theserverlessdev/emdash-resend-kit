@@ -37,6 +37,7 @@ export async function browserCheck({ origin, outDir, check }) {
 			.getByRole("button", { name: "Get Started" })
 			.click({ timeout: 20_000 })
 			.catch(() => {});
+		await page.waitForTimeout(1000);
 
 		// Dashboard widget.
 		await page.getByText("Email delivery").first().waitFor({ timeout: 60_000 });

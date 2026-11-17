@@ -1,0 +1,42 @@
+name: Feature request
+description: Suggest a change or a new feature.
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem do you want to solve?
+      description: Describe your use case. A use case helps more than a solution.
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: What solution do you suggest?
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Which alternatives did you examine?
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Email provider
+        - Client for site code
+        - Webhooks
+        - Delivery log
+        - Suppression list
+        - Admin pages
+        - Documentation
+        - Other
+    validations:
+      required: true
+  - type: checkboxes
+    id: contribute
+    attributes:
+      label: Contribution
+      options:
+        - label: I can open a pull request for this feature.

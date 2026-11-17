@@ -209,6 +209,15 @@ async function main() {
 			providers.some((item) => item.pluginId === PLUGIN_ID),
 			emailSettings.text.slice(0, 400),
 		);
+		// EmDash selects a provider automatically when it is the only real provider.
+		console.log(
+			`INFO  provider before a manual selection: ${emailSettings.json?.data?.selectedProviderId}`,
+		);
+		check(
+			"EmDash selects the plugin automatically as the only provider",
+			emailSettings.json?.data?.selectedProviderId === PLUGIN_ID,
+			String(emailSettings.json?.data?.selectedProviderId),
+		);
 		const select = await api("/_emdash/api/settings/email", {
 			method: "PUT",
 			body: JSON.stringify({ provider: "plugin", pluginId: PLUGIN_ID }),
@@ -396,6 +405,28 @@ async function main() {
 			"the search of the log works",
 			blocksText(searched).includes("invitee@example.com") &&
 				!blocksText(searched).includes("button@example.com"),
+		);
+
+		const today = new Date().toISOString().slice(0, 10);
+		const tomorrow = new Date(Date.now() + 86_400_000).toISOString().slice(0, 10);
+		const tableRows = (response) =>
+			(response.json?.data?.blocks ?? []).find((block) => block.type === "table")?.rows ?? [];
+		const fromToday = await admin({
+			type: "form_submit",
+			action_id: "log_filter",
+			page: "/log",
+			values: { status: "all", search: "", from: today, to: today },
+		});
+		const fromTomorrow = await admin({
+			type: "form_submit",
+			action_id: "log_filter",
+			page: "/log",
+			values: { status: "all", search: "", from: tomorrow, to: "" },
+		});
+		check(
+			"the date filter of the log works",
+			tableRows(fromToday).length >= 4 && tableRows(fromTomorrow).length === 0,
+			`today: ${tableRows(fromToday).length}, tomorrow: ${tableRows(fromTomorrow).length}`,
 		);
 
 		// 10. Webhooks.

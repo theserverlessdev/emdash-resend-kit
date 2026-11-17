@@ -1,0 +1,77 @@
+name: Bug report
+description: Report a problem with emdash-resend-kit.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for the report.
+        Do not include an API key or a signing secret. For a security problem, use the private report form.
+  - type: textarea
+    id: description
+    attributes:
+      label: What occurred?
+      description: Describe the problem. Include the exact error message.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Configure the plugin with ...
+        2. Send ...
+        3. See the error ...
+    validations:
+      required: true
+  - type: textarea
+    id: config
+    attributes:
+      label: Plugin configuration
+      description: The `resendKit({ ... })` call from `astro.config.mjs`. Remove all secrets.
+      render: js
+  - type: input
+    id: version
+    attributes:
+      label: emdash-resend-kit version
+      placeholder: 0.1.0
+    validations:
+      required: true
+  - type: input
+    id: emdash
+    attributes:
+      label: EmDash version
+      placeholder: 1.5.0
+    validations:
+      required: true
+  - type: dropdown
+    id: runtime
+    attributes:
+      label: Runtime
+      options:
+        - Cloudflare Workers
+        - Node
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Log output
+      description: Relevant lines from the server log. Remove all secrets and personal data.
+      render: text
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: I read the section "Troubleshooting" of the README.
+          required: true
+        - label: This report contains no API key, no signing secret, and no personal data.
+          required: true

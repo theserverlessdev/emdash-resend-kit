@@ -158,6 +158,56 @@ describe("recordSend", () => {
 		expect(fake.logs.some((line) => line.level === "debug")).toBe(true);
 	});
 
+	it("counts one sent email when Resend returns a known ID", async () => {
+		const fake = fakeContext();
+		const input = {
+			to: "person@example.com",
+			subject: "Same",
+			source: "system",
+			resendId: "re-1",
+			status: "sent" as const,
+		};
+		await recordSend(fake.ctx, "full", true, input, NOW);
+		await recordSend(fake.ctx, "full", true, input, NOW + 1000);
+		expect(fake.stats.docs.get("2026-11-17")?.data.sent).toBe(1);
+	});
+
+	it("completes a record that a webhook created before the send path", async () => {
+		const fake = fakeContext();
+		// The `delivered` webhook arrives before the send path writes its record.
+		await applyWebhookEvent(
+			fake.ctx,
+			"full",
+			event("email.delivered", "re-1", { subject: "From the webhook" }),
+			"msg_1",
+		);
+		expect(stored(fake, "re-1").source).toBe("external");
+		const id = await recordSend(
+			fake.ctx,
+			"masked",
+			true,
+			{
+				to: "person@example.com",
+				subject: "From the send path",
+				source: "system",
+				resendId: "re-1",
+				status: "sent",
+			},
+			NOW,
+		);
+		expect(id).toBe("re-1");
+		expect(stored(fake, "re-1")).toMatchObject({
+			source: "system",
+			subject: "From the send path",
+			to: "p***@example.com",
+			status: "delivered",
+		});
+		// The `sent` webhook arrives last. The log counts the email one time.
+		await applyWebhookEvent(fake.ctx, "full", event("email.sent", "re-1"), "msg_2");
+		expect(fake.stats.docs.get("2026-11-17")?.data).toMatchObject({ sent: 1, delivered: 1 });
+		expect(stored(fake, "re-1").status).toBe("delivered");
+	});
+
 	it("clips a long subject and counts a scheduled email as sent", async () => {
 		const fake = fakeContext();
 		await recordSend(

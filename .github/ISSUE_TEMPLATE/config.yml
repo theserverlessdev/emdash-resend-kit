@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Question
+    url: https://github.com/theserverlessdev/emdash-resend-kit/discussions
+    about: Ask a question in Discussions.
+  - name: Security problem
+    url: https://github.com/theserverlessdev/emdash-resend-kit/security/advisories/new
+    about: Report a vulnerability in private. Do not open a public issue.
+  - name: Resend account or deliverability
+    url: https://resend.com/help
+    about: This project cannot help with a Resend account. Ask Resend support.
