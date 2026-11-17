@@ -44,9 +44,9 @@ export function loadWorkerEnv(): Promise<EnvRecord | null> {
 	workerEnvPromise ??= (async () => {
 		try {
 			const specifier = ["cloudflare", "workers"].join(":");
-			const module_: { env?: unknown } = await import(/* @vite-ignore */ specifier);
-			return typeof module_.env === "object" && module_.env !== null
-				? (module_.env as EnvRecord)
+			const workers: { env?: unknown } = await import(/* @vite-ignore */ specifier);
+			return typeof workers.env === "object" && workers.env !== null
+				? (workers.env as EnvRecord)
 				: null;
 		} catch {
 			return null;

@@ -37,6 +37,15 @@ export interface SendDeps {
 	now?: () => number;
 }
 
+function isLocalUrl(url: string): boolean {
+	try {
+		const host = new URL(url).hostname;
+		return host === "localhost" || host === "127.0.0.1" || host === "[::1]";
+	} catch {
+		return false;
+	}
+}
+
 /** Create a client that uses the HTTP access of the plugin context. */
 export function clientForContext(
 	ctx: PluginContext,
@@ -44,7 +53,9 @@ export function clientForContext(
 	overrides: { timeoutMs?: number; maxRetries?: number; deadlineMs?: number } = {},
 	deps: SendDeps = {},
 ): ResendClient {
-	const http = ctx.http;
+	// EmDash blocks a plugin request to a local address. A local base URL is
+	// for tests with a mock server, so that case uses the global `fetch`.
+	const http = isLocalUrl(config.baseUrl) ? undefined : ctx.http;
 	return (deps.createClient ?? createResendClient)({
 		getApiKey: () => config.apiKey?.value,
 		baseUrl: config.baseUrl,

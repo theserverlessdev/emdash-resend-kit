@@ -1,0 +1,10 @@
+dist
+coverage
+node_modules
+.integration
+package-lock.json
+examples/*/node_modules
+examples/*/dist
+examples/*/.astro
+examples/*/seed
+CHANGELOG.md

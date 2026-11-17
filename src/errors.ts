@@ -86,7 +86,10 @@ const BEARER_PATTERN = /Bearer\s+[A-Za-z0-9._~+/=-]{4,}/gi;
  * The function removes Resend API keys, webhook secrets, bearer tokens, and
  * each literal secret in `secrets`.
  */
-export function redactSecrets(text: string, secrets: ReadonlyArray<string | undefined> = []): string {
+export function redactSecrets(
+	text: string,
+	secrets: ReadonlyArray<string | undefined> = [],
+): string {
 	let result = text;
 	for (const secret of secrets) {
 		if (secret && secret.length >= 4) result = result.split(secret).join("[redacted]");

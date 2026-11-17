@@ -114,7 +114,11 @@ export interface StatsSummary {
 }
 
 /** Read the counters of the last `days` days, with today as the last day. */
-export async function readStats(ctx: PluginContext, days: number, now = Date.now()): Promise<StatsSummary> {
+export async function readStats(
+	ctx: PluginContext,
+	days: number,
+	now = Date.now(),
+): Promise<StatsSummary> {
 	const keys: string[] = [];
 	for (let offset = days - 1; offset >= 0; offset -= 1) {
 		keys.push(dateKey(now - offset * 86_400_000));
@@ -203,9 +207,12 @@ function firstString(value: unknown): string | null {
 /** Build the short detail text of a webhook event. */
 export function eventDetail(event: ResendWebhookEvent): string | undefined {
 	const data = event.data;
-	const bounce = data.bounce as { type?: unknown; subType?: unknown; message?: unknown } | undefined;
+	const bounce = data.bounce as
+		{ type?: unknown; subType?: unknown; message?: unknown } | undefined;
 	if (bounce && typeof bounce === "object") {
-		const kind = [bounce.type, bounce.subType].filter((part) => typeof part === "string").join(" / ");
+		const kind = [bounce.type, bounce.subType]
+			.filter((part) => typeof part === "string")
+			.join(" / ");
 		const message = typeof bounce.message === "string" ? bounce.message : "";
 		return clip([kind, message].filter(Boolean).join(": "));
 	}

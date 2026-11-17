@@ -1,0 +1,27 @@
+---
+// A minimal page with a contact form. The form posts to /api/contact.
+const sent = Astro.url.searchParams.get("sent");
+---
+
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>emdash-resend-kit example</title>
+	</head>
+	<body>
+		<main>
+			<h1>emdash-resend-kit example</h1>
+			<p><a href="/_emdash/admin">Open the EmDash admin</a></p>
+
+			<h2>Contact form</h2>
+			{sent === "1" && <p role="status">Your message is on its way.</p>}
+			{sent === "0" && <p role="alert">The message did not send. Try again later.</p>}
+			<form method="post" action="/api/contact">
+				<p><label>Your email <input type="email" name="email" required /></label></p>
+				<p><label>Message <textarea name="message" required></textarea></label></p>
+				<p><button type="submit">Send</button></p>
+			</form>
+		</main>
+	</body>
+</html>

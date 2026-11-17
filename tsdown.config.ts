@@ -14,5 +14,5 @@ export default defineConfig({
 	clean: true,
 	// `emdash` is a peer dependency. `cloudflare:workers` exists only on the
 	// Workers runtime, and the code loads it with a guarded dynamic import.
-	external: ["emdash", /^cloudflare:/, /^node:/],
+	deps: { neverBundle: ["emdash", /^cloudflare:/, /^node:/] },
 });

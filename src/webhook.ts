@@ -89,7 +89,9 @@ function readHeader(
 }
 
 /** Read the three signature headers. Return `null` when one is missing. */
-export function extractWebhookHeaders(headers: VerifyWebhookInput["headers"]): WebhookHeaders | null {
+export function extractWebhookHeaders(
+	headers: VerifyWebhookInput["headers"],
+): WebhookHeaders | null {
 	const id = readHeader(headers, "id");
 	const timestamp = readHeader(headers, "timestamp");
 	const signature = readHeader(headers, "signature");
@@ -128,7 +130,11 @@ export async function signWebhook(
 		false,
 		["sign"],
 	);
-	const signed = await crypto.subtle.sign("HMAC", key, utf8(`${id}.${timestampSeconds}.${payload}`));
+	const signed = await crypto.subtle.sign(
+		"HMAC",
+		key,
+		utf8(`${id}.${timestampSeconds}.${payload}`),
+	);
 	return `v1,${bytesToBase64(new Uint8Array(signed))}`;
 }
 
@@ -154,7 +160,10 @@ export async function verifyWebhook(input: VerifyWebhookInput): Promise<ResendWe
 	}
 
 	if (!/^\d{1,12}$/.test(headers.timestamp)) {
-		throw new WebhookVerificationError("invalid_timestamp", "The svix-timestamp header is invalid.");
+		throw new WebhookVerificationError(
+			"invalid_timestamp",
+			"The svix-timestamp header is invalid.",
+		);
 	}
 	const timestamp = Number(headers.timestamp);
 	const tolerance = input.toleranceSeconds ?? DEFAULT_TOLERANCE_SECONDS;

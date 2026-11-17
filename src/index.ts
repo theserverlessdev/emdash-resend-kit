@@ -23,12 +23,7 @@
  */
 
 import { definePlugin } from "emdash";
-import type {
-	PluginContext,
-	PluginDescriptor,
-	ResolvedPlugin,
-	SettingField,
-} from "emdash";
+import type { PluginContext, PluginDescriptor, ResolvedPlugin, SettingField } from "emdash";
 
 import { createAdminHandler, type AdminDeps } from "./plugin/admin.js";
 import { apiHost, resolveConfig, validateOptions } from "./plugin/config.js";

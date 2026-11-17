@@ -289,9 +289,7 @@ export function buildEmailPayload(
 ): Record<string, unknown> {
 	const from = email.from ?? defaults.from;
 	if (!from) {
-		throw validationError(
-			"The email has no sender. Set `from` on the email or on the client.",
-		);
+		throw validationError("The email has no sender. Set `from` on the email or on the client.");
 	}
 	const to = toList(email.to);
 	if (!to) throw validationError("The email has no recipient. Set `to`.");
@@ -449,9 +447,14 @@ export function createResendClient(options: ResendClientOptions = {}): ResendCli
 		signal: AbortSignal | undefined,
 	): Promise<Response> {
 		const doFetch = options.fetch ?? ((input: string, init_?: RequestInit) => fetch(input, init_));
+		if (signal?.aborted) {
+			throw new ResendError({
+				code: "timeout",
+				message: "The caller aborted the request to Resend.",
+			});
+		}
 		const controller = new AbortController();
 		const onAbort = () => controller.abort(signal?.reason);
-		if (signal?.aborted) onAbort();
 		signal?.addEventListener("abort", onAbort, { once: true });
 		let timer: ReturnType<typeof setTimeout> | undefined;
 		// The race makes the timeout work even when `fetch` ignores the signal.
@@ -524,7 +527,12 @@ export function createResendClient(options: ResendClientOptions = {}): ResendCli
 		for (;;) {
 			let failure: ResendError;
 			try {
-				const response = await attemptFetch(`${baseUrl}${path}`, init, apiKey, requestOptions.signal);
+				const response = await attemptFetch(
+					`${baseUrl}${path}`,
+					init,
+					apiKey,
+					requestOptions.signal,
+				);
 				const text = await response.text();
 				if (response.ok) {
 					if (!text) return {};
@@ -619,7 +627,12 @@ export function createResendClient(options: ResendClientOptions = {}): ResendCli
 		},
 
 		async getEmail(id, requestOptions) {
-			const result = await request("GET", `/emails/${requirePathId(id)}`, undefined, requestOptions);
+			const result = await request(
+				"GET",
+				`/emails/${requirePathId(id)}`,
+				undefined,
+				requestOptions,
+			);
 			return mapEmail(result as Record<string, unknown>);
 		},
 
@@ -650,7 +663,12 @@ export function createResendClient(options: ResendClientOptions = {}): ResendCli
 		},
 
 		async getDomain(id, requestOptions) {
-			const result = await request("GET", `/domains/${requirePathId(id)}`, undefined, requestOptions);
+			const result = await request(
+				"GET",
+				`/domains/${requirePathId(id)}`,
+				undefined,
+				requestOptions,
+			);
 			return mapDomain(result as Record<string, unknown>);
 		},
 	};

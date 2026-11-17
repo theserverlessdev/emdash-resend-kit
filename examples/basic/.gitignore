@@ -1,0 +1,14 @@
+node_modules
+dist
+.astro
+.emdash
+uploads
+data.db
+data.db-*
+emdash-env.d.ts
+package-lock.json
+
+# Environment
+.env
+.env.*
+!.env.example

@@ -13,10 +13,22 @@ import {
 	type EnvSources,
 	type ResolvedSecret,
 } from "../secrets.js";
-import { DEFAULTS, type RecipientPrivacy, type ResendKitOptions, type RuntimeConfig } from "./types.js";
+import {
+	DEFAULTS,
+	type RecipientPrivacy,
+	type ResendKitOptions,
+	type RuntimeConfig,
+} from "./types.js";
 
 const PREFIX = "[emdash-resend-kit]";
-const FORBIDDEN_OPTION_KEYS = ["apiKey", "api_key", "key", "webhookSecret", "signingSecret", "secret"];
+const FORBIDDEN_OPTION_KEYS = [
+	"apiKey",
+	"api_key",
+	"key",
+	"webhookSecret",
+	"signingSecret",
+	"secret",
+] as const;
 const ENV_NAME_PATTERN = /^[A-Za-z_][A-Za-z0-9_]*$/;
 const EMAIL_PATTERN = /^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/;
 const PRIVACY_VALUES: ReadonlyArray<RecipientPrivacy> = ["full", "masked", "hashed"];
@@ -97,7 +109,7 @@ export function validateOptions(options: ResendKitOptions | undefined): ResendKi
 		try {
 			normaliseTags(value.tags);
 		} catch (error) {
-			throw new Error(`${PREFIX} ${(error as Error).message}`);
+			throw new Error(`${PREFIX} ${(error as Error).message}`, { cause: error });
 		}
 	}
 	if (typeof value.sourceTag === "string") {
@@ -224,7 +236,9 @@ export async function resolveConfig(
 				? Math.floor(retentionSetting)
 				: (options.retentionDays ?? DEFAULTS.retentionDays),
 		suppression:
-			asBoolean(values.get(SETTING_KEYS.suppression)) ?? options.suppression ?? DEFAULTS.suppression,
+			asBoolean(values.get(SETTING_KEYS.suppression)) ??
+			options.suppression ??
+			DEFAULTS.suppression,
 		webhookToleranceSeconds: options.webhookToleranceSeconds ?? DEFAULTS.webhookToleranceSeconds,
 		apiKey: pickSecret(apiKeyEnv, asString(values.get(SETTING_KEYS.apiKey))),
 		webhookSecret: pickSecret(webhookSecretEnv, asString(values.get(SETTING_KEYS.webhookSecret))),

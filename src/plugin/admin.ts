@@ -11,13 +11,7 @@ import type { ResendDomain } from "../client.js";
 import { isResendError, redactSecrets } from "../errors.js";
 import { describeSecretSource, type EnvSources } from "../secrets.js";
 import { isEmailAddress, resolveConfig, SETTING_KEYS } from "./config.js";
-import {
-	ALL_STATUSES,
-	emailsCollection,
-	queryLog,
-	readStats,
-	type LogFilters,
-} from "./log.js";
+import { ALL_STATUSES, emailsCollection, queryLog, readStats, type LogFilters } from "./log.js";
 import { clientForContext, sendMessage, type SendDeps } from "./send.js";
 import { addSuppression, listSuppressions, removeSuppression } from "./suppression.js";
 import {
@@ -116,6 +110,22 @@ function formatTime(iso: string): string {
 	return `${new Date(time).toISOString().slice(0, 16).replace("T", " ")} UTC`;
 }
 
+/**
+ * Build an absolute URL of the site.
+ *
+ * EmDash gives a relative path when the site URL is not known. The origin of
+ * the current request is the fallback.
+ */
+export function absoluteUrl(routeCtx: RouteContext, path: string): string {
+	const fromSite = routeCtx.url(path);
+	if (/^https?:\/\//i.test(fromSite)) return fromSite;
+	try {
+		return new URL(path, routeCtx.request.url).href;
+	} catch {
+		return fromSite;
+	}
+}
+
 function errorText(error: unknown, secrets: ReadonlyArray<string | undefined>): string {
 	const message = error instanceof Error ? error.message : String(error);
 	return redactSecrets(message, secrets);
@@ -136,7 +146,12 @@ function senderDomainName(from: string | null): string | null {
 	if (!from) return null;
 	const address = /<([^<>]+)>\s*$/.exec(from)?.[1] ?? from;
 	const at = address.lastIndexOf("@");
-	return at > 0 ? address.slice(at + 1).trim().toLowerCase() : null;
+	return at > 0
+		? address
+				.slice(at + 1)
+				.trim()
+				.toLowerCase()
+		: null;
 }
 
 /** Read the domain status from Resend, with a cache of one minute. */
@@ -165,9 +180,7 @@ export async function loadDomainReport(
 		const match = wanted ? report.domains.find((domain) => domain.name === wanted) : undefined;
 		if (match) report.senderDomain = await client.getDomain(match.id);
 	} catch (error) {
-		report.error = isResendError(error)
-			? error.message
-			: errorText(error, [config.apiKey.value]);
+		report.error = isResendError(error) ? error.message : errorText(error, [config.apiKey.value]);
 	}
 	await ctx.kv.set(DOMAIN_CACHE_KEY, report);
 	return report;
@@ -256,7 +269,9 @@ function statusFields(config: RuntimeConfig): Block {
 		fields: [
 			{
 				label: "API key",
-				value: config.apiKey ? `Present. ${describeSecretSource(config.apiKey.source)}.` : "Missing",
+				value: config.apiKey
+					? `Present. ${describeSecretSource(config.apiKey.source)}.`
+					: "Missing",
 			},
 			{ label: "Sender", value: config.from ?? "Not set" },
 			{ label: "Reply-to", value: config.replyTo ?? "Not set" },
@@ -333,7 +348,7 @@ async function settingsPage(
 		accessory: {
 			type: "link",
 			label: "Open email settings",
-			target: { kind: "external", url: routeCtx.url("/_emdash/admin/settings/email") },
+			target: { kind: "external", url: absoluteUrl(routeCtx, "/_emdash/admin/settings/email") },
 		},
 	});
 
@@ -360,7 +375,7 @@ async function settingsPage(
 		context(
 			"Add this URL as a webhook in the Resend dashboard. Select all email events. Then copy the signing secret to RESEND_WEBHOOK_SECRET.",
 		),
-		{ type: "code", language: "bash", code: routeCtx.url(WEBHOOK_PATH) },
+		{ type: "code", language: "bash", code: absoluteUrl(routeCtx, WEBHOOK_PATH) },
 		context(
 			config.webhookSecret
 				? "The signing secret is present. The plugin verifies each webhook."
@@ -652,7 +667,8 @@ async function logPage(
 			),
 		);
 	}
-	blocks.push({
+	const filtersActive = Object.keys(state.filters).length > 0;
+	const filterForm: Block = {
 		type: "form",
 		block_id: "filters",
 		fields: [
@@ -673,10 +689,21 @@ async function logPage(
 				placeholder: "Recipient address or subject",
 				initial_value: state.filters.search ?? "",
 			},
-			{ type: "date_input", action_id: "from", label: "From", initial_value: state.filters.from ?? "" },
+			{
+				type: "date_input",
+				action_id: "from",
+				label: "From",
+				initial_value: state.filters.from ?? "",
+			},
 			{ type: "date_input", action_id: "to", label: "To", initial_value: state.filters.to ?? "" },
 		],
 		submit: { label: "Apply filters", action_id: "log_filter" },
+	};
+	blocks.push({
+		type: "accordion",
+		label: "Filters",
+		default_open: filtersActive,
+		blocks: [filterForm],
 	});
 	blocks.push({
 		type: "table",
@@ -892,7 +919,9 @@ async function statsWidget(
 	if (!config.apiKey) {
 		blocks.unshift(banner("error", "The Resend API key is missing."));
 	} else if (!config.webhookSecret) {
-		blocks.push(context("Add the Resend webhook to count delivered, bounced, and complained emails."));
+		blocks.push(
+			context("Add the Resend webhook to count delivered, bounced, and complained emails."),
+		);
 	}
 	return { blocks };
 }
