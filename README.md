@@ -420,6 +420,8 @@ Then the plugin does this:
 
 - A webhook for a permanent bounce adds the recipient to the list.
 - A webhook for a spam complaint adds the recipient to the list.
+- An event for an email with more than one recipient adds nothing. The event does not say which
+  recipient caused it.
 - A temporary bounce adds nothing.
 - A send to a listed address fails with the error code `suppressed`. The plugin makes no request to
   Resend.

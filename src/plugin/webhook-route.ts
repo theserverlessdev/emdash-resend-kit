@@ -54,7 +54,10 @@ export function createWebhookHandler(
 				routeCtx.log.warn("The plugin rejected a webhook.", { code: error.code });
 				throw new PluginRouteError(
 					"WEBHOOK_SIGNATURE_INVALID",
-					error.message,
+					// Do not tell an anonymous caller that the stored secret is wrong.
+					error.code === "invalid_secret"
+						? "The webhook signature does not match the signing secret."
+						: error.message,
 					BAD_REQUEST_CODES.has(error.code) ? 400 : 401,
 				);
 			}

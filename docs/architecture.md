@@ -90,6 +90,9 @@ with retries. The plugin sets these limits:
 | One send with all retries      | 25 seconds |
 | The `email:deliver` hook       | 30 seconds |
 
+An attempt never runs past the limit of the send. The client shortens the timeout of the last
+attempt to the time that is left.
+
 ### Idempotency
 
 EmDash gives a message no ID. The plugin computes the key from the content:

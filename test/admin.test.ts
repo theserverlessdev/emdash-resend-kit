@@ -575,6 +575,35 @@ describe("log pages", () => {
 		}
 	});
 
+	it("shows the first page when the storage rejects a cursor", async () => {
+		const { admin, fake } = await seeded();
+		const query = fake.emails.query.bind(fake.emails);
+		fake.emails.query = async (options = {}) => {
+			if (options.cursor === "bad") throw new Error("Invalid cursor");
+			return query(options);
+		};
+		const page = await admin({
+			type: "block_action",
+			action_id: "log_page",
+			page: "/log",
+			value: { cursor: JSON.stringify({ f: { status: "sent" }, c: "bad" }) },
+		});
+		expect(rows(page)).toHaveLength(25);
+
+		const list = fake.suppressions.query.bind(fake.suppressions);
+		fake.suppressions.query = async (options = {}) => {
+			if (options.cursor === "bad") throw new Error("Invalid cursor");
+			return list(options);
+		};
+		const suppressions = await admin({
+			type: "block_action",
+			action_id: "suppressions_page",
+			page: "/suppressions",
+			value: { cursor: "bad" },
+		});
+		expect(JSON.stringify(suppressions.blocks)).toContain("Suppression list");
+	});
+
 	it("shows the details and the event timeline of one email", async () => {
 		const { admin } = await seeded();
 		const page = await admin({

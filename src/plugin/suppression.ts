@@ -85,7 +85,9 @@ export function suppressionFromEvent(
 		: typeof event.data.to === "string"
 			? [event.data.to]
 			: [];
-	if (addresses.length === 0) return null;
+	// An event does not say which recipient of an email caused it. Act only on
+	// an email with one recipient. EmDash sends each email to one recipient.
+	if (addresses.length !== 1) return null;
 	if (event.type === "email.complained") {
 		return { reason: "complained", addresses, detail: "The recipient marked the email as spam." };
 	}

@@ -156,6 +156,14 @@ describe("webhook route", () => {
 		expect(error).toMatchObject({ code: "WEBHOOK_INVALID", status: 400 });
 	});
 
+	it("does not tell the caller that the stored secret is not valid", async () => {
+		const { post, fake } = setup({}, { RESEND_WEBHOOK_SECRET: "whsec_not base64 !!" });
+		const error = await routeError(post(delivered));
+		expect(error.status).toBe(401);
+		expect(error.message).toBe("The webhook signature does not match the signing secret.");
+		expect(fake.logs.at(-1)).toMatchObject({ data: { code: "invalid_secret" } });
+	});
+
 	it("answers 503 when the signing secret is not set", async () => {
 		const { post } = setup({}, {});
 		expect(await routeError(post(delivered))).toMatchObject({

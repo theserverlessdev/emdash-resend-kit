@@ -412,6 +412,28 @@ describe("applyWebhookEvent", () => {
 		expect(stored(fake, "ext-3").to).toBe("");
 	});
 
+	it("records the event when the counter storage fails", async () => {
+		const fake = fakeContext();
+		await sent(fake);
+		let calls = 0;
+		fake.stats.updateIf = async () => {
+			calls += 1;
+			throw new Error("serialization failure");
+		};
+		const result = await applyWebhookEvent(
+			fake.ctx,
+			"full",
+			event("email.delivered", "re-1"),
+			"msg_1",
+		);
+		expect(result.outcome).toBe("recorded");
+		expect(calls).toBe(3);
+		expect(fake.logs.at(-1)).toMatchObject({
+			level: "warn",
+			data: { field: "delivered", reason: "serialization failure" },
+		});
+	});
+
 	it("tries again after a write conflict, and gives up after 5 conflicts", async () => {
 		const fake = fakeContext();
 		await sent(fake);
@@ -460,8 +482,15 @@ describe("eventDetail", () => {
 			),
 		).toBe("OnAccountSuppressionList: Listed");
 		expect(
-			eventDetail(event("email.clicked", "x", { click: { link: "https://example.com" } })),
-		).toBe("https://example.com");
+			eventDetail(
+				event("email.clicked", "x", {
+					click: { link: "https://example.com/invite?token=secret-token#x" },
+				}),
+			),
+		).toBe("example.com");
+		expect(
+			eventDetail(event("email.clicked", "x", { click: { link: "not a url" } })),
+		).toBeUndefined();
 		expect(eventDetail(event("email.delivered", "x"))).toBeUndefined();
 	});
 });

@@ -562,6 +562,42 @@ describe("retries", () => {
 		expect(http.calls).toHaveLength(1);
 		time = 0;
 	});
+
+	it("limits an attempt to the time that is left before the deadline", async () => {
+		const { client, http } = setup(["hang"], { deadlineMs: 30, timeoutMs: 60_000, maxRetries: 0 });
+		const started = Date.now();
+		const error = await failure(client.send(email));
+		expect(error.code).toBe("timeout");
+		expect(error.message).toContain("30 ms");
+		expect(Date.now() - started).toBeLessThan(2000);
+		expect(http.calls).toHaveLength(1);
+	});
+
+	it("starts no attempt after the deadline", async () => {
+		let time = 0;
+		const { client, http } = setup([rateLimit, { status: 200, body: { id: "late" } }], {
+			deadlineMs: 1000,
+			retryBaseDelayMs: 100,
+			now: () => time,
+			sleep: async () => {
+				time = 5000;
+			},
+		});
+		const error = await failure(client.send(email));
+		expect(error.code).toBe("timeout");
+		expect(http.calls).toHaveLength(1);
+	});
+
+	it("applies the timeout to the read of the response body", async () => {
+		const stalled = new Response(new ReadableStream({ start() {} }), { status: 200 });
+		const client = createResendClient({
+			apiKey: TEST_KEY,
+			timeoutMs: 20,
+			maxRetries: 0,
+			fetch: async () => stalled,
+		});
+		expect((await failure(client.send(email))).code).toBe("timeout");
+	});
 });
 
 describe("timeout", () => {

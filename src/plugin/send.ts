@@ -134,7 +134,19 @@ export async function sendMessage(
 
 	let cc = message.cc?.filter((address) => address.trim().length > 0) ?? [];
 	if (config.suppression) {
-		const suppressed = await findSuppression(ctx, message.to);
+		// A storage problem must not stop an email, so a failed lookup means
+		// "not on the list".
+		const lookup = async (address: string) => {
+			try {
+				return await findSuppression(ctx, address);
+			} catch (error) {
+				ctx.log.warn("The plugin did not read the suppression list.", {
+					reason: error instanceof Error ? error.message : String(error),
+				});
+				return null;
+			}
+		};
+		const suppressed = await lookup(message.to);
 		if (suppressed) {
 			return fail(
 				new ResendError({
@@ -145,7 +157,7 @@ export async function sendMessage(
 		}
 		const kept: string[] = [];
 		for (const address of cc) {
-			if (!(await findSuppression(ctx, address))) kept.push(address);
+			if (!(await lookup(address))) kept.push(address);
 		}
 		cc = kept;
 	}

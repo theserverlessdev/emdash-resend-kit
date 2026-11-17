@@ -973,8 +973,15 @@ export function createAdminHandler(
 				});
 			case "log_filter":
 				return logPage(routeCtx, options, deps, { filters: parseFilters(values) });
-			case "log_page":
-				return logPage(routeCtx, options, deps, parseLogState(value));
+			case "log_page": {
+				const state = parseLogState(value);
+				try {
+					return await logPage(routeCtx, options, deps, state);
+				} catch {
+					// The cursor is not valid. Show the first page.
+					return logPage(routeCtx, options, deps, { filters: state.filters });
+				}
+			}
 			case "log_back":
 				return logPage(routeCtx, options, deps, {
 					filters: isRecord(value) ? parseFilters(value.f) : {},
@@ -1008,12 +1015,17 @@ export function createAdminHandler(
 				});
 			}
 			case "suppressions_page":
-				return suppressionsPage(
-					routeCtx,
-					options,
-					deps,
-					isRecord(value) && typeof value.cursor === "string" ? value.cursor : undefined,
-				);
+				try {
+					return await suppressionsPage(
+						routeCtx,
+						options,
+						deps,
+						isRecord(value) && typeof value.cursor === "string" ? value.cursor : undefined,
+					);
+				} catch {
+					// The cursor is not valid. Show the first page.
+					return suppressionsPage(routeCtx, options, deps);
+				}
 			default:
 				if (page === PAGES.log) return logPage(routeCtx, options, deps, { filters: {} });
 				if (page === PAGES.suppressions) return suppressionsPage(routeCtx, options, deps);

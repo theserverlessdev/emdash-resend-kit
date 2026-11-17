@@ -98,12 +98,20 @@ function emptyStats(date: string): DailyStats {
 /** Add 1 to one counter of one day. The update is atomic. */
 export async function bumpStat(ctx: PluginContext, date: string, field: StatField): Promise<void> {
 	const stats = statsCollection(ctx);
-	for (let attempt = 0; attempt < 2; attempt += 1) {
-		const result = await stats.updateIf(date, { where: {}, delta: { [field]: { inc: 1 } } });
-		if (result.applied) return;
-		// The record of the day does not exist. Create it, then count again.
-		await stats.compareAndSet(date, null, emptyStats(date));
+	let reason = "The counter record is not available.";
+	// A storage error can be temporary, so try three times. A counter problem
+	// must not stop a send or make Resend repeat a webhook.
+	for (let attempt = 0; attempt < 3; attempt += 1) {
+		try {
+			const result = await stats.updateIf(date, { where: {}, delta: { [field]: { inc: 1 } } });
+			if (result.applied) return;
+			// The record of the day does not exist. Create it, then count again.
+			await stats.compareAndSet(date, null, emptyStats(date));
+		} catch (error) {
+			reason = error instanceof Error ? error.message : String(error);
+		}
 	}
+	ctx.log.warn("The delivery log did not update a daily counter.", { date, field, reason });
 }
 
 export interface StatsSummary {
@@ -238,7 +246,14 @@ export function eventDetail(event: ResendWebhookEvent): string | undefined {
 		);
 	}
 	const click = data.click as { link?: unknown } | undefined;
-	if (click && typeof click.link === "string") return clip(click.link);
+	// A link in an invite or a sign-in email contains a token. Store the host only.
+	if (click && typeof click.link === "string") {
+		try {
+			return new URL(click.link).host;
+		} catch {
+			return undefined;
+		}
+	}
 	return undefined;
 }
 

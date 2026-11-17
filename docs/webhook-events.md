@@ -70,9 +70,13 @@ The timeline shows a short detail for some events.
 | `email.bounced`    | Bounce type, bounce subtype, and the bounce message   |
 | `email.failed`     | The failure reason, for example `reached_daily_quota` |
 | `email.suppressed` | The suppression type and message                      |
-| `email.clicked`    | The link                                              |
+| `email.clicked`    | The host of the link                                  |
 
+The plugin stores only the host of a link, because a link in an invite contains a token.
 The plugin does not store the IP address or the user agent of an open or a click.
+
+A bounce or a complaint changes the suppression list only for an email with one recipient. The
+event does not say which recipient of an email caused it.
 
 ## Payload example
 

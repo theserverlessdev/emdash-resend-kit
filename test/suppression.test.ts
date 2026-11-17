@@ -84,7 +84,7 @@ describe("suppression list", () => {
 });
 
 describe("suppressionFromEvent", () => {
-	const data = { email_id: "re-1", to: ["a@example.com", "b@example.com", 42, "not-an-address"] };
+	const data = { email_id: "re-1", to: ["a@example.com", 42, "not-an-address"] };
 
 	it("returns the recipients of a permanent bounce", () => {
 		expect(
@@ -95,9 +95,19 @@ describe("suppressionFromEvent", () => {
 			}),
 		).toEqual({
 			reason: "bounced",
-			addresses: ["a@example.com", "b@example.com"],
+			addresses: ["a@example.com"],
 			detail: "No mailbox",
 		});
+	});
+
+	it("ignores an email with more than one recipient", () => {
+		expect(
+			suppressionFromEvent({
+				type: "email.complained",
+				created_at: "",
+				data: { to: ["a@example.com", "b@example.com"] },
+			}),
+		).toBeNull();
 	});
 
 	it("treats a bounce without a type as permanent", () => {

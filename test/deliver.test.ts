@@ -301,6 +301,16 @@ describe("email:deliver hook", () => {
 });
 
 describe("suppression in the send path", () => {
+	it("sends the email when the suppression list is not readable", async () => {
+		const { fake, deliver } = setup({ from: "site@mail.example.com", suppression: true });
+		fake.suppressions.get = async () => {
+			throw new Error("database is down");
+		};
+		await deliver({ ...MESSAGE, cc: ["cc@example.com"] });
+		expect(fake.http.calls).toHaveLength(1);
+		expect(fake.logs.some((line) => line.level === "warn")).toBe(true);
+	});
+
 	it("does not send to a suppressed address and records the skip", async () => {
 		const { fake, deliver, records } = setup({ from: "site@mail.example.com", suppression: true });
 		await addSuppression(fake.ctx, "full", { address: "person@example.com", reason: "bounced" });

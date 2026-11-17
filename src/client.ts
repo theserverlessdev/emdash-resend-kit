@@ -445,7 +445,8 @@ export function createResendClient(options: ResendClientOptions = {}): ResendCli
 		init: RequestInit,
 		apiKey: string,
 		signal: AbortSignal | undefined,
-	): Promise<Response> {
+		limitMs: number,
+	): Promise<{ response: Response; text: string }> {
 		const doFetch = options.fetch ?? ((input: string, init_?: RequestInit) => fetch(input, init_));
 		if (signal?.aborted) {
 			throw new ResendError({
@@ -465,13 +466,18 @@ export function createResendClient(options: ResendClientOptions = {}): ResendCli
 					new ResendError({
 						code: "timeout",
 						retryable: true,
-						message: `Resend did not answer in ${timeoutMs} ms.`,
+						message: `Resend did not answer in ${limitMs} ms.`,
 					}),
 				);
-			}, timeoutMs);
+			}, limitMs);
 		});
 		try {
-			return await Promise.race([doFetch(url, { ...init, signal: controller.signal }), timeout]);
+			// The timeout also covers the read of the body.
+			const exchange = (async () => {
+				const response = await doFetch(url, { ...init, signal: controller.signal });
+				return { response, text: await response.text() };
+			})();
+			return await Promise.race([exchange, timeout]);
 		} catch (error) {
 			if (error instanceof ResendError) throw error;
 			if (signal?.aborted) {
@@ -485,7 +491,7 @@ export function createResendClient(options: ResendClientOptions = {}): ResendCli
 				throw new ResendError({
 					code: "timeout",
 					retryable: true,
-					message: `Resend did not answer in ${timeoutMs} ms.`,
+					message: `Resend did not answer in ${limitMs} ms.`,
 					cause: error,
 				});
 			}
@@ -527,13 +533,21 @@ export function createResendClient(options: ResendClientOptions = {}): ResendCli
 		for (;;) {
 			let failure: ResendError;
 			try {
-				const response = await attemptFetch(
+				// An attempt never runs past the deadline of the call.
+				const remaining = deadline === undefined ? timeoutMs : deadline - now();
+				if (remaining <= 0) {
+					throw new ResendError({
+						code: "timeout",
+						message: `Resend did not answer in ${options.deadlineMs} ms.`,
+					});
+				}
+				const { response, text } = await attemptFetch(
 					`${baseUrl}${path}`,
 					init,
 					apiKey,
 					requestOptions.signal,
+					Math.min(timeoutMs, remaining),
 				);
-				const text = await response.text();
 				if (response.ok) {
 					if (!text) return {};
 					try {
