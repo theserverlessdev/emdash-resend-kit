@@ -1,0 +1,85 @@
+{
+	"name": "emdash-resend-kit",
+	"version": "0.1.0",
+	"description": "Resend integration for EmDash CMS: email provider, delivery log, webhooks, suppression list, and a typed client for site code.",
+	"type": "module",
+	"license": "MIT",
+	"author": "The Serverless Dev (https://theserverless.dev)",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/theserverlessdev/emdash-resend-kit.git"
+	},
+	"homepage": "https://github.com/theserverlessdev/emdash-resend-kit#readme",
+	"bugs": {
+		"url": "https://github.com/theserverlessdev/emdash-resend-kit/issues"
+	},
+	"keywords": [
+		"emdash",
+		"emdash-plugin",
+		"resend",
+		"email",
+		"transactional-email",
+		"astro",
+		"cloudflare-workers",
+		"webhooks",
+		"cms"
+	],
+	"sideEffects": false,
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"default": "./dist/index.js"
+		},
+		"./client": {
+			"types": "./dist/client.d.ts",
+			"default": "./dist/client.js"
+		},
+		"./webhook": {
+			"types": "./dist/webhook.d.ts",
+			"default": "./dist/webhook.js"
+		},
+		"./package.json": "./package.json"
+	},
+	"main": "./dist/index.js",
+	"types": "./dist/index.d.ts",
+	"files": [
+		"dist"
+	],
+	"engines": {
+		"node": ">=22.16"
+	},
+	"publishConfig": {
+		"access": "public",
+		"provenance": true
+	},
+	"scripts": {
+		"build": "tsdown",
+		"dev": "tsdown --watch",
+		"typecheck": "tsc --noEmit",
+		"lint": "oxlint",
+		"format": "prettier --write .",
+		"format:check": "prettier --check .",
+		"test": "vitest run",
+		"test:watch": "vitest",
+		"test:coverage": "vitest run --coverage",
+		"test:integration": "node scripts/integration.mjs",
+		"check:package": "publint && attw --pack --profile esm-only",
+		"check": "npm run lint && npm run format:check && npm run typecheck && npm run test:coverage && npm run build && npm run check:package",
+		"prepublishOnly": "npm run check"
+	},
+	"peerDependencies": {
+		"emdash": "^1.5.0"
+	},
+	"devDependencies": {
+		"@arethetypeswrong/cli": "^0.18.5",
+		"@types/node": "^22.19.0",
+		"@vitest/coverage-v8": "^4.1.10",
+		"emdash": "1.5.0",
+		"oxlint": "^1.94.0",
+		"prettier": "^3.10.1",
+		"publint": "^0.3.25",
+		"tsdown": "^0.23.7",
+		"typescript": "~6.0.3",
+		"vitest": "^4.1.10"
+	}
+}
